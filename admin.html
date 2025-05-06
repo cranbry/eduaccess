@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EduAccess Admin Panel</title>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      background: #f7f9fc;
+      padding: 30px;
+      color: #333;
+    }
+
+    h1 {
+      color: #1a73e8;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+      max-width: 500px;
+    }
+
+    form input, form textarea {
+      width: 100%;
+      margin: 10px 0;
+      padding: 8px;
+      font-size: 1rem;
+    }
+
+    form button {
+      padding: 10px 20px;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      background: white;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+    }
+
+    th {
+      background-color: #1a73e8;
+      color: white;
+    }
+
+    .actions button {
+      margin: 0 4px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel</h1>
+
+  <form id="addForm">
+    <h2>Add New Resource</h2>
+    <input type="text" name="title" placeholder="Title" required />
+    <input type="text" name="type" placeholder="Type (PDF, Video...)" />
+    <input type="text" name="subject" placeholder="Subject" />
+    <textarea name="description" placeholder="Description" required></textarea>
+    <input type="text" name="uploaded_by" placeholder="Uploaded By" />
+    <input type="date" name="date_uploaded" />
+    <button type="submit">Add Resource</button>
+  </form>
+
+  <h2>All Resources</h2>
+  <table id="resourceTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Subject</th>
+        <th>Description</th>
+        <th>Uploaded By</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadResources() {
+      const res = await fetch("api.php?q=");
+      const data = await res.json();
+      const tbody = document.querySelector("#resourceTable tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(item => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.id}</td>
+          <td contenteditable="true" data-field="title">${item.title}</td>
+          <td contenteditable="true" data-field="type">${item.type ?? ''}</td>
+          <td contenteditable="true" data-field="subject">${item.subject ?? ''}</td>
+          <td contenteditable="true" data-field="description">${item.description}</td>
+          <td contenteditable="true" data-field="uploaded_by">${item.uploaded_by ?? ''}</td>
+          <td contenteditable="true" data-field="date_uploaded">${item.date_uploaded ?? ''}</td>
+          <td class="actions">
+            <button onclick="updateResource(${item.id}, this)">Save</button>
+            <button onclick="deleteResource(${item.id})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function addResource(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      const res = await fetch("insert.php", {
+        method: "POST",
+        body: formData
+      });
+
+      const msg = await res.text();
+      alert(msg);
+      form.reset();
+      loadResources();
+    }
+
+    async function updateResource(id, btn) {
+      const row = btn.closest("tr");
+      const cells = row.querySelectorAll("[data-field]");
+
+      const data = { id };
+      cells.forEach(cell => {
+        data[cell.dataset.field] = cell.innerText;
+      });
+
+      const res = await fetch("update.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const msg = await res.text();
+      alert(msg);
+    }
+
+    async function deleteResource(id) {
+      if (!confirm("Delete this resource?")) return;
+
+      const res = await fetch(`delete.php?id=${id}`);
+      const msg = await res.text();
+      alert(msg);
+      loadResources();
+    }
+
+    document.getElementById("addForm").addEventListener("submit", addResource);
+    loadResources();
+  </script>
+</body>
+</html>

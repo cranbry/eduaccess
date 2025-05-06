@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Results - EduAccess</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      margin: 0;
+      padding: 20px 5%;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .result-card {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .result-card h3 {
+      margin: 0;
+      color: #1a73e8;
+      font-size: 1.2rem;
+    }
+
+    .result-card p {
+      margin: 10px 0 0;
+      font-size: 0.95rem;
+    }
+
+    .highlight {
+      color: #1a73e8;
+    }
+
+    .result-item {
+        background: white;
+        margin: 20px auto;
+        padding: 15px 20px;
+        border-radius: 8px;
+        max-width: 800px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    }
+
+    .result-item .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    }
+
+    .result-item h3 {
+    margin: 0;
+    color: #1a73e8;
+    font-size: 1.1rem;
+    }
+
+    .result-item p {
+    margin-top: 8px;
+    font-size: 0.95rem;
+    }
+
+    .toggle-btn {
+    padding: 5px 10px;
+    background-color: #f1f3f4;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    }
+
+    .hidden {
+    display: none;
+    }
+
+  </style>
+</head>
+<body>
+  <h2>Search Results for: <span class="highlight" id="query"></span></h2>
+  <div id="results"></div>
+
+<script>
+  async function loadResults() {
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get("q");
+
+    document.querySelector("h2").innerHTML += ` <span style="color:#1a73e8">${query}</span>`;
+
+    try {
+      const res = await fetch(`http://localhost/eduaccess/api.php?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+
+      const container = document.getElementById("results");
+
+      if (data.length === 0) {
+        container.innerHTML = "<p>No results found.</p>";
+        return;
+      }
+
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "result-item";
+
+        div.innerHTML = `
+          <div class="title-row">
+            <h3>${item.title}</h3>
+            <button class="toggle-btn">More</button>
+          </div>
+          <p>${item.description}</p>
+          <div class="extra-info hidden">
+            <p><strong>Type:</strong> ${item.type ?? 'N/A'}</p>
+            <p><strong>Subject:</strong> ${item.subject ?? 'N/A'}</p>
+            <p><strong>Uploaded by:</strong> ${item.uploaded_by ?? 'N/A'}</p>
+            <p><strong>Date:</strong> ${item.date_uploaded ?? 'N/A'}</p>
+          </div>
+        `;
+
+        container.appendChild(div);
+      });
+
+      document.querySelectorAll(".toggle-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const info = btn.parentElement.nextElementSibling.nextElementSibling;
+          info.classList.toggle("hidden");
+          btn.textContent = info.classList.contains("hidden") ? "More" : "Less";
+        });
+      });
+
+    } catch (err) {
+      document.getElementById("results").innerHTML = "<p>Error loading results.</p>";
+    }
+  }
+
+  loadResults();
+</script>
+</body>
+</html>
