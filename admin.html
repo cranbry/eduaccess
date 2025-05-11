@@ -8,12 +8,17 @@
     body {
       font-family: Inter, sans-serif;
       background: #f7f9fc;
-      padding: 30px;
+      margin: 0;
       color: #333;
+    }
+
+    .admin-container {
+      padding: 20px;
     }
 
     h1 {
       color: #1a73e8;
+      padding-bottom: 20px;
     }
 
     form {
@@ -31,7 +36,7 @@
       padding: 8px;
       font-size: 1rem;
     }
-
+    
     form button {
       padding: 10px 20px;
       background-color: #1a73e8;
@@ -79,6 +84,7 @@
     </nav>
   </header>
   
+  <div class="admin-container">
   <h1>Admin Panel</h1>
 
   <form id="addForm">
@@ -108,7 +114,7 @@
     </thead>
     <tbody></tbody>
   </table>
-
+  </div>
   <script>
     async function loadResources() {
       const res = await fetch("api.php?q=");
