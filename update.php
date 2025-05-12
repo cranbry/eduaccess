@@ -1,4 +1,10 @@
 <?php
+require __DIR__ . '/db.php';
+
+// to run queries on $pdo:
+$stmt = $pdo->query("SELECT * FROM resources");
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($rows);
 header("Content-Type: application/json");
 ini_set('display_errors',1);
 error_reporting(E_ALL);
