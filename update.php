@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 
 // same schema whitelist
 $schema = [
-  "resources" => ["title","type","subject","description","uploaded_by","date_uploaded"],
+  "resources" => ["title","type","subject","description","uploaded_by","date_uploaded","tutor_id","workshop_id"],
   "tutors"    => ["name","subject","expertise"],
   "workshops" => ["topic","date","location","host","capacity"]
 ];

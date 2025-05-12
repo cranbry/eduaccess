@@ -5,8 +5,8 @@ error_reporting(E_ALL);
 
 // whitelisted columns per table
 $schema = [
-  "resources" => ["title","type","subject","description","uploaded_by","date_uploaded"],
-  "tutors"    => ["name","subject","availability", "contact_email"],
+  "resources" => ["title","type","subject","description","uploaded_by","date_uploaded","tutor_id","workshop_id"],
+  "tutors"    => ["name","subject","availability","contact_email"],
   "workshops" => ["topic","date","location","host","capacity"]
 ];
 
