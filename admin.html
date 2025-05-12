@@ -85,108 +85,287 @@
   </header>
   
   <div class="admin-container">
-  <h1>Admin Panel</h1>
 
-  <form id="addForm">
-    <h2>Add New Resource</h2>
-    <input type="text" name="title" placeholder="Title" required />
-    <input type="text" name="type" placeholder="Type (PDF, Video...)" />
-    <input type="text" name="subject" placeholder="Subject" />
-    <textarea name="description" placeholder="Description" required></textarea>
-    <input type="text" name="uploaded_by" placeholder="Uploaded By" />
-    <input type="date" name="date_uploaded" />
-    <button type="submit">Add Resource</button>
-  </form>
+    <h1>Admin Panel</h1>
+  
+    <!-- Adding form for each table -->
+    <form id="addForm">
+      <h2>Add New Record</h2>
+  
+      <label>
+        Table:
+        <select name="table" id="tableSelector" required>
+          <option value="" disabled selected>— Select table —</option>
+          <option value="resources">Resources</option>
+          <option value="tutors">Tutors</option>
+          <option value="workshops">Workshops</option>
+        </select>
+      </label>
+  
+      <!-- RESOURCES inputs -->
+      <fieldset data-for="resources" class="inputs-group">
+        <input type="text" name="title"        placeholder="Title"      required />
+        <input type="text" name="type"         placeholder="Type"               />
+        <input type="text" name="subject"      placeholder="Subject"            />
+        <textarea    name="description"        placeholder="Description" required></textarea>
+        <input type="text" name="uploaded_by"  placeholder="Uploaded By"       />
+        <input type="date" name="date_uploaded" />
+      </fieldset>
+  
+      <!-- TUTORS inputs -->
+      <fieldset data-for="tutors" class="inputs-group" style="display:none">
+        <input type="text"  name="name"          placeholder="Name"            required />
+        <input type="text"  name="subject"       placeholder="Subject"         />
+        <input type="text"  name="availability"  placeholder="Availability"    />
+        <input type="email" name="contact_email" placeholder="Contact Email"   />
+      </fieldset>
+  
+      <!-- WORKSHOPS inputs -->
+      <fieldset data-for="workshops" class="inputs-group" style="display:none">
+        <input type="text"   name="topic"     placeholder="Topic"     required />
+        <input type="date"   name="date"      placeholder="Date"      required />
+        <input type="text"   name="location"  placeholder="Location"  />
+        <input type="text"   name="host"      placeholder="Host"      />
+        <input type="number" name="capacity"  placeholder="Capacity"  min="1" />
+      </fieldset>
+  
+      <button type="submit">Add</button>
+    </form>
 
-  <h2>All Resources</h2>
-  <table id="resourceTable">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Title</th>
-        <th>Type</th>
-        <th>Subject</th>
-        <th>Description</th>
-        <th>Uploaded By</th>
-        <th>Date</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+      <h2>All Resources</h2>
+      <table id="resourceTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Title</th><th>Type</th><th>Subject</th>
+            <th>Description</th><th>Uploaded By</th><th>Date</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Tutors -->
+    <section>
+      <h2>All Tutors</h2>
+      <table id="tutorTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Subject</th><th>Availability</th><th>Contact_email</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Workshops -->
+    <section>
+      <h2>All Workshops</h2>
+      <table id="workshopTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Topic</th><th>Date</th><th>Location</th><th>Host</th><th>Capacity</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
   </div>
+
   <script>
-    async function loadResources() {
-      const res = await fetch("api.php?q=");
+    document.addEventListener("DOMContentLoaded", () => {
+      // Elements
+      const selector = document.getElementById("tableSelector");
+      const groups   = document.querySelectorAll(".inputs-group");
+      const addForm  = document.getElementById("addForm");
+    
+      // Show/hide the right inputs based on table choice
+      selector.addEventListener("change", () => {
+      groups.forEach(fs => {
+        const show = fs.dataset.for === selector.value;
+        fs.style.display = show ? "block" : "none";
+        // disable all hidden inputs/textareas
+        fs.querySelectorAll("input, textarea").forEach(el => {
+          el.disabled = !show;
+          });
+        });
+      });
+    
+      // Unified submit handler
+      addForm.addEventListener("submit", async e => {
+        e.preventDefault();
+        const table = selector.value;
+        if (!table) return alert("Please select a table.");
+    
+        // Collect only visible inputs
+        const fd = new FormData();
+        fd.append("table", table);
+        const visibleFs = addForm.querySelector(`fieldset[data-for="${table}"]`);
+        visibleFs.querySelectorAll("input, textarea").forEach(input => {
+          if (input.value) fd.append(input.name, input.value);
+        });
+    
+        // Send to generic insert endpoint
+        const res = await fetch(`insert.php?table=${table}`, {
+          method: "POST",
+          body: fd
+        });
+        alert(await res.text());
+    
+        addForm.reset();
+        groups.forEach(fs => fs.style.display = "none");
+    
+        // Reload the correct section
+        if (table === "resources") loadResources();
+        if (table === "tutors")    loadTutors();
+        if (table === "workshops") loadWorkshops();
+      });
+    
+      // —— RESOURCES —— //
+      async function loadResources() {
+        const res  = await fetch("api.php?table=resources&q=");
+        const data = await res.json();
+        const tbody = document.querySelector("#resourceTable tbody");
+        tbody.innerHTML = "";
+        data.forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${item.id}</td>
+            <td contenteditable data-field="title">${item.title}</td>
+            <td contenteditable data-field="type">${item.type||""}</td>
+            <td contenteditable data-field="subject">${item.subject||""}</td>
+            <td contenteditable data-field="description">${item.description}</td>
+            <td contenteditable data-field="uploaded_by">${item.uploaded_by||""}</td>
+            <td contenteditable data-field="date_uploaded">${item.date_uploaded||""}</td>
+            <td class="actions">
+              <button onclick="updateResource(${item.id}, this)">Save</button>
+              <button onclick="deleteResource(${item.id})">Delete</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+      }
+      async function updateResource(id, btn) {
+        const row = btn.closest("tr");
+        const data = { id };
+        row.querySelectorAll("[data-field]").forEach(c => {
+          data[c.dataset.field] = c.innerText;
+        });
+        const res = await fetch("update.php?table=resources", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        alert(await res.text());
+        loadResources();
+      }
+      async function deleteResource(id) {
+        if (!confirm("Delete this resource?")) return;
+        const res = await fetch(`delete.php?table=resources&id=${id}`);
+        alert(await res.text());
+        loadResources();
+      }
+    
+      // —— TUTORS —— //
+      async function loadTutors() {
+      const res  = await fetch("tutors.php");
       const data = await res.json();
-      const tbody = document.querySelector("#resourceTable tbody");
+      const tbody = document.querySelector("#tutorTable tbody");
       tbody.innerHTML = "";
-
       data.forEach(item => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
           <td>${item.id}</td>
-          <td contenteditable="true" data-field="title">${item.title}</td>
-          <td contenteditable="true" data-field="type">${item.type ?? ''}</td>
-          <td contenteditable="true" data-field="subject">${item.subject ?? ''}</td>
-          <td contenteditable="true" data-field="description">${item.description}</td>
-          <td contenteditable="true" data-field="uploaded_by">${item.uploaded_by ?? ''}</td>
-          <td contenteditable="true" data-field="date_uploaded">${item.date_uploaded ?? ''}</td>
+          <td contenteditable data-field="name">${item.name}</td>
+          <td contenteditable data-field="subject">${item.subject||""}</td>
+          <td contenteditable data-field="availability">${item.availability||""}</td>
+          <td contenteditable data-field="contact_email">${item.contact_email||""}</td>
           <td class="actions">
-            <button onclick="updateResource(${item.id}, this)">Save</button>
-            <button onclick="deleteResource(${item.id})">Delete</button>
-          </td>
-        `;
-        tbody.appendChild(row);
+            <button onclick="updateTutor(${item.id}, this)">Save</button>
+            <button onclick="deleteTutor(${item.id})">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
       });
     }
 
-    async function addResource(e) {
-      e.preventDefault();
-      const form = e.target;
-      const formData = new FormData(form);
+      async function updateTutor(id, btn) {
+        const row = btn.closest("tr");
+        const data = { id };
+        row.querySelectorAll("[data-field]").forEach(c => {
+          data[c.dataset.field] = c.innerText;
+        });
+        const res = await fetch("update.php?table=tutors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        alert(await res.text());
+        loadTutors();
+      }
+      async function deleteTutor(id) {
+        if (!confirm("Delete this tutor?")) return;
+        const res = await fetch(`delete.php?table=tutors&id=${id}`);
+        alert(await res.text());
+        loadTutors();
+      }
+    
+      // —— WORKSHOPS —— //
+      async function loadWorkshops() {
+        const res  = await fetch("workshops.php");
+        const data = await res.json();
+        const tbody = document.querySelector("#workshopTable tbody");
+        tbody.innerHTML = "";
+        data.forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${item.id}</td>
+            <td contenteditable data-field="topic">${item.topic}</td>
+            <td contenteditable data-field="date">${item.date}</td>
+            <td contenteditable data-field="location">${item.location||""}</td>
+            <td contenteditable data-field="host">${item.host||""}</td>
+            <td contenteditable data-field="capacity">${item.capacity||""}</td>
+            <td class="actions">
+              <button onclick="updateWorkshop(${item.id}, this)">Save</button>
+              <button onclick="deleteWorkshop(${item.id})">Delete</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+      }
+      async function updateWorkshop(id, btn) {
+        const row = btn.closest("tr");
+        const data = { id };
+        row.querySelectorAll("[data-field]").forEach(c => {
+          data[c.dataset.field] = c.innerText;
+        });
+        const res = await fetch("update.php?table=workshops", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        alert(await res.text());
+        loadWorkshops();
+      }
+      async function deleteWorkshop(id) {
+        if (!confirm("Delete this workshop?")) return;
+        const res = await fetch(`delete.php?table=workshops&id=${id}`);
+        alert(await res.text());
+        loadWorkshops();
+      }
+      
+      console.log(document.getElementById('addForm'));
 
-      const res = await fetch("insert.php", {
-        method: "POST",
-        body: formData
-      });
-
-      const msg = await res.text();
-      alert(msg);
-      form.reset();
+      // Initial load of all tables
       loadResources();
-    }
-
-    async function updateResource(id, btn) {
-      const row = btn.closest("tr");
-      const cells = row.querySelectorAll("[data-field]");
-
-      const data = { id };
-      cells.forEach(cell => {
-        data[cell.dataset.field] = cell.innerText;
-      });
-
-      const res = await fetch("update.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-
-      const msg = await res.text();
-      alert(msg);
-    }
-
-    async function deleteResource(id) {
-      if (!confirm("Delete this resource?")) return;
-
-      const res = await fetch(`delete.php?id=${id}`);
-      const msg = await res.text();
-      alert(msg);
-      loadResources();
-    }
-
-    document.getElementById("addForm").addEventListener("submit", addResource);
-    loadResources();
-  </script>
+      loadTutors();
+      loadWorkshops();
+    
+      // Expose update/delete functions globally
+      window.updateResource   = updateResource;
+      window.deleteResource   = deleteResource;
+      window.updateTutor      = updateTutor;
+      window.deleteTutor      = deleteTutor;
+      window.updateWorkshop   = updateWorkshop;
+      window.deleteWorkshop   = deleteWorkshop;
+    });
+    </script>    
 </body>
 </html>
